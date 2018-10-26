@@ -1,8 +1,12 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.disnodeteam.dogecv.CameraViewDisplay;
+import com.disnodeteam.dogecv.DogeCV;
+import com.disnodeteam.dogecv.detectors.roverrukus.SamplingOrderDetector;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 @Autonomous(name = "Auto: Basic", group = "Autonomous")
 public class AutoOpMode extends LinearOpMode {
@@ -11,6 +15,13 @@ public class AutoOpMode extends LinearOpMode {
     DcMotor MotorFrontY;
     DcMotor MotorBackX;
     DcMotor MotorBackY;
+
+    DcMotor MotorArm;
+    DcMotor MotorExtend;
+    DcMotor MotorLand;
+    private SamplingOrderDetector detector;
+
+    char goldPosition;
 
     @Override
     public void runOpMode() throws InterruptedException
@@ -23,42 +34,58 @@ public class AutoOpMode extends LinearOpMode {
         //start opMode loop. Main Code Goes Here.
         while (opModeIsActive())
         {
-            double d = 2.0;
-            telemetry.addData("d declared", "nothing");
+            telemetry.addData("Gold Position: ", goldPosition);
             telemetry.update();
 
+            //for moving distance
+            //land  robot
+
+         //   robotLanding();
+/*
+            if (goldPosition == 'n'){
+                getGoldPosition();
+            }
+ */
+
+
+            moveForward(1.5);
+            //Place Robominion marker in the safe depot
+            //placeMarker();
+
+            //If gold position not detected then find again after landing
+
+            telemetry.addData("Gold Position: ", goldPosition);
+            telemetry.update();
+
+            //Move forward for dropping marker
+            double d = 1.5;
             moveForward(d);
-            telemetry.addData("moved forward 12 inches", "nothing");
-            telemetry.update();
 
-            slideRight(d);
-            telemetry.addData("slid right 12 inches", "nothing");
-            telemetry.update();
+            // Drop marker
+            //placeMarker();
 
-            moveBackward(d);
-            telemetry.addData("moved backwards 12 inches", "nothing");
-            telemetry.update();
+            //Move to the gold minral position
+            d=1.25;
 
-            slideLeft(d);
-            telemetry.addData("slid left 12 inches", "nothing");
-            telemetry.update();
+            if(goldPosition == 'c'){
+                //Do nothing as robot is already at center position
+            }else if(goldPosition == 'l'){
+                slideLeft(d);
+            }else if(goldPosition == 'r'){
+                slideRight(d);
+            }
 
+            //Knock gold ony if gold position found
+            d= 0.8;
+            if(goldPosition != 'n'){
+                moveForward(d);
+                moveBackward(d);
+            }
 
-
-            turnClockwise(d);
-            telemetry.addData("turned 12 inches", "nothing");
-            telemetry.update();
-
-
-            turnAntiClockwise(d);
-            telemetry.addData("turned 12 inches", "nothing");
-            telemetry.update();
-
-            sleep(1000);
-
-            setPower(0);
-
-            //Stop opMode
+            //Go to crater
+            slideRight(5);
+          setPower(0);
+            stop();
             requestOpModeStop();
             break;
         }
@@ -71,6 +98,9 @@ public class AutoOpMode extends LinearOpMode {
         MotorBackX = (DcMotor) hardwareMap.dcMotor.get("bx");
         MotorBackY = (DcMotor) hardwareMap.dcMotor.get("by");
 
+        MotorExtend = hardwareMap.dcMotor.get("extend");
+        MotorArm = hardwareMap.dcMotor.get("arm");
+        MotorLand = hardwareMap.dcMotor.get("land");
 
         // Reverse the motor that runs backwards when connected directly to the battery
         MotorFrontX.setDirection(DcMotor.Direction.REVERSE);
@@ -78,17 +108,46 @@ public class AutoOpMode extends LinearOpMode {
         MotorBackX.setDirection(DcMotor.Direction.FORWARD);
         MotorBackY.setDirection(DcMotor.Direction.FORWARD);
 
+        MotorExtend.setDirection(DcMotor.Direction.REVERSE);
+        MotorArm.setDirection(DcMotor.Direction.REVERSE);
+        MotorLand.setDirection(DcMotor.Direction.FORWARD);
+
         //Motors set to run with encoders
         MotorBackX.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         MotorBackY.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         MotorFrontX.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         MotorFrontY.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        MotorExtend.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        MotorArm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        MotorLand.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        MotorLand.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        detector = new SamplingOrderDetector();
+        detector.init(hardwareMap.appContext, CameraViewDisplay.getInstance());
+        detector.useDefaults();
+
+        detector.downscale = 0.4; // How much to downscale the input frames
+
+        // Optional Tuning
+        detector.areaScoringMethod = DogeCV.AreaScoringMethod.MAX_AREA; // Can also be PERFECT_AREA
+        //detector.perfectAreaScorer.perfectArea = 10000; // if using PERFECT_AREA scoring
+        detector.maxAreaScorer.weight = 0.001;
+
+        detector.ratioScorer.weight = 15;
+        detector.ratioScorer.perfectRatio = 1.0;
+
+
+        detector.enable();
+        getGoldPosition();
+        detector.disable();
+
     }
 
     public void moveForward(double distance)
     {
-        MotorFrontY.setPower(-0.35);
-        MotorBackY.setPower(-0.35);
+        MotorFrontY.setPower(-0.65);
+        MotorBackY.setPower(-0.65);
 
         MotorFrontY.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         MotorBackY.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -121,8 +180,8 @@ public class AutoOpMode extends LinearOpMode {
 
     public void moveBackward(double distance)
     {
-        MotorFrontY.setPower(0.35);
-        MotorBackY.setPower(0.35);
+        MotorFrontY.setPower(0.65);
+        MotorBackY.setPower(0.65);
 
         MotorFrontY.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         MotorBackY.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -145,8 +204,8 @@ public class AutoOpMode extends LinearOpMode {
 
     public void slideRight(double distance)
     {
-        MotorFrontX.setPower(0.35);
-        MotorBackX.setPower(0.35);
+        MotorFrontX.setPower(0.65);
+        MotorBackX.setPower(0.65);
 
         MotorFrontX.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         MotorBackX.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -167,8 +226,8 @@ public class AutoOpMode extends LinearOpMode {
 
     public void slideLeft (double distance)
     {
-        MotorFrontX.setPower(-0.35);
-        MotorBackX.setPower(-0.35);
+        MotorFrontX.setPower(-0.65);
+        MotorBackX.setPower(-0.65);
 
 
         telemetry.addData("Reached SlideLeft, Ready to  setMode", "none");
@@ -243,10 +302,10 @@ public class AutoOpMode extends LinearOpMode {
         MotorFrontX.setTargetPosition((MotorFrontX.getCurrentPosition() - (COUNTS)));
         MotorBackX.setTargetPosition((MotorBackX.getCurrentPosition() + (COUNTS)));
 
-        MotorFrontY.setPower(-0.35);
-        MotorBackY.setPower(0.35);
-        MotorFrontX.setPower(0.35);
-        MotorBackX.setPower(-0.35);
+        MotorFrontY.setPower(-0.65);
+        MotorBackY.setPower(0.65);
+        MotorFrontX.setPower(0.65);
+        MotorBackX.setPower(-0.65);
 
 
         while (opModeIsActive() && MotorBackY.isBusy() && MotorBackX.isBusy() &&
@@ -259,6 +318,171 @@ public class AutoOpMode extends LinearOpMode {
         sleep(100);
 
     }
+
+    public void moveArmForward(double distance)
+    {
+        MotorArm.setPower(-0.65);
+
+        MotorArm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        telemetry.addData("Calling count", "");
+        telemetry.update();
+
+        int COUNTS = distanceToCounts(distance);
+
+        telemetry.addData("Counts", COUNTS);
+        telemetry.update();
+
+        telemetry.addData("MotorArm", MotorArm.getCurrentPosition());
+        telemetry.update();
+
+        MotorArm.setTargetPosition((MotorArm.getCurrentPosition() - (COUNTS)));
+
+
+        while (opModeIsActive() && MotorArm.isBusy())
+        {
+            telemetry.addData("Running motor arm forward", "Encoders");
+            telemetry.update();
+        }
+        setPower(0);
+        sleep(100);
+    }
+
+    public void moveArmBackward(double distance)
+    {
+        MotorArm.setPower(0.65);
+
+        MotorArm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        telemetry.addData("Calling count", "");
+        telemetry.update();
+
+        int COUNTS = distanceToCounts(distance);
+
+        telemetry.addData("Counts", COUNTS);
+        telemetry.update();
+
+        telemetry.addData("MotorArm", MotorArm.getCurrentPosition());
+        telemetry.update();
+
+        MotorArm.setTargetPosition((MotorArm.getCurrentPosition() + (COUNTS)));
+
+
+        while (opModeIsActive() && MotorArm.isBusy())
+        {
+            telemetry.addData("Running motor arm backward", "Encoders");
+            telemetry.update();
+        }
+        setPower(0);
+        sleep(100);
+    }
+
+    public void extendArmForward(double distance)
+    {
+        MotorExtend.setPower(0.65);
+
+        MotorExtend.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        telemetry.addData("Calling count", "");
+        telemetry.update();
+
+        int COUNTS = distanceToCounts(distance);
+
+        telemetry.addData("Counts", COUNTS);
+        telemetry.update();
+
+        telemetry.addData("MotorExtend", MotorArm.getCurrentPosition());
+        telemetry.update();
+
+        MotorExtend.setTargetPosition((MotorExtend.getCurrentPosition() + (COUNTS)));
+
+
+        while (opModeIsActive() && MotorExtend.isBusy())
+        {
+            telemetry.addData("Running motor extend forward", "Encoders");
+            telemetry.update();
+        }
+        setPower(0);
+        sleep(100);
+    }
+
+    public void extendArmBackward(double distance)
+    {
+        MotorExtend.setPower(-0.65);
+
+        MotorExtend.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        telemetry.addData("Calling count", "");
+        telemetry.update();
+
+        int COUNTS = distanceToCounts(distance);
+
+        telemetry.addData("Counts", COUNTS);
+        telemetry.update();
+
+        telemetry.addData("MotorExtend", MotorArm.getCurrentPosition());
+        telemetry.update();
+
+        MotorExtend.setTargetPosition((MotorExtend.getCurrentPosition() - (COUNTS)));
+
+
+        while (opModeIsActive() && MotorExtend.isBusy())
+        {
+            telemetry.addData("Running motor extend forward", "Encoders");
+            telemetry.update();
+        }
+        setPower(0);
+        sleep(100);
+    }
+
+    public void robotLanding (){
+
+        //Landing
+        MotorLand.setPower(1);
+
+        double dist = 21;
+        int COUNTS = distanceToCounts (dist);
+
+        telemetry.addData("Counts", COUNTS);
+        telemetry.update();
+        MotorLand.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        MotorLand.setTargetPosition((MotorLand.getCurrentPosition() + (COUNTS)));
+
+        telemetry.addData("Robot Landing", (MotorLand.getCurrentPosition() + (COUNTS)));
+        telemetry.update();
+
+
+        while (opModeIsActive() && MotorLand.isBusy())
+        {
+            telemetry.addData("Robot Landing", "Encoders");
+            telemetry.update();
+        }
+
+        telemetry.addData(" After Robot Landing ", (MotorLand.getCurrentPosition() + (COUNTS)));
+        telemetry.update();
+
+        setPower(0);
+
+        //Release handle
+        slideLeft(0.5);
+
+        //Get landing arm down
+        MotorLand.setPower(-1.0);
+
+        MotorLand.setTargetPosition((MotorLand.getCurrentPosition() - (COUNTS)));
+
+        while (opModeIsActive() && MotorLand.isBusy())
+        {
+            telemetry.addData("Taking Landing arm down", "Encoders");
+            telemetry.update();
+        }
+        setPower(0);
+
+        //Come back to center position
+        slideRight(0.3);
+    }
+
 
     public void setPower(double power)
     {
@@ -274,5 +498,56 @@ public class AutoOpMode extends LinearOpMode {
         return Math.round(rotations);
     }
 
+
+    public void getGoldPosition() {
+        goldPosition = 'n';
+        int center = 0;
+        int left = 0;
+        int right = 0;
+
+        try {
+            for (int i = 0; i < 100; i++) {
+                if (detector.getCurrentOrder().toString() == "LEFT") {
+                    left++;
+                } else if (detector.getCurrentOrder().toString() == "RIGHT") {
+                    right++;
+                } else if (detector.getCurrentOrder().toString() == "CENTER") {
+                    center++;
+                }
+                telemetry.addData("Order", detector.getCurrentOrder().toString());
+                telemetry.update();
+                sleep (100);
+            }
+
+        }catch (Exception e) {
+            telemetry.addData("Exception: ", e);
+        }
+
+        if(center>left && center>right){
+            goldPosition = 'c';
+        } else if(left>center && left>right){
+            goldPosition = 'l';
+        } else if(right>center && right>left){
+            goldPosition = 'r';
+        }
+
+        telemetry.addData("Gold Position: ", goldPosition);
+        telemetry.addData("Last Order", detector.getLastOrder().toString()); // The last known result
+        telemetry.addData("Center: ", center);
+        telemetry.addData("left: ", left);
+        telemetry.addData("Right: ", right);
+        telemetry.update();
+    }
+    public void placeMarker(){
+        extendArmForward(6);
+        moveArmForward(.8);
+        extendArmBackward(6);
+
+        moveArmBackward(.25);
+
+        telemetry.addData("Marker Placed", "Encoders");
+        telemetry.update();
+
+    }
 
 }
