@@ -34,57 +34,44 @@ public class AutoOpMode extends LinearOpMode {
         //start opMode loop. Main Code Goes Here.
         while (opModeIsActive())
         {
-            telemetry.addData("Gold Position: ", goldPosition);
+
+            goldPosition = getGoldPosition();
+
+            telemetry.addData("Outside Gold Position : ", goldPosition);
             telemetry.update();
+            sleep(1000);
 
-            //for moving distance
-            //land  robot
+            robotLanding();
+            telemetry.addData("After Landing", null);
+            telemetry.update();
+            sleep(1000);//it detects the position
 
-         //   robotLanding();
-/*
-            if (goldPosition == 'n'){
-                getGoldPosition();
-            }
- */
-
-
+            slideLeft(0.5);
             moveForward(1.5);
-            //Place Robominion marker in the safe depot
-            //placeMarker();
+            slideRight(0.5);
 
-            //If gold position not detected then find again after landing
-
-            telemetry.addData("Gold Position: ", goldPosition);
-            telemetry.update();
-
-            //Move forward for dropping marker
-            double d = 1.5;
-            moveForward(d);
-
-            // Drop marker
-            //placeMarker();
-
-            //Move to the gold minral position
-            d=1.25;
-
+            double d = 1.2;
             if(goldPosition == 'c'){
-                //Do nothing as robot is already at center position
-            }else if(goldPosition == 'l'){
-                slideLeft(d);
-            }else if(goldPosition == 'r'){
-                slideRight(d);
-            }
-
-            //Knock gold ony if gold position found
-            d= 0.8;
-            if(goldPosition != 'n'){
                 moveForward(d);
-                moveBackward(d);
+                moveForward(1.0);
+            }else if(goldPosition == 'l')
+            {
+                slideLeft(d);
+                moveForward(1.0);
+            } else if(goldPosition == 'r'){
+                slideRight(d);
+                moveForward(1.0);
+            }
+            else{
+                telemetry.addData("Nothing Matched, Moving forward", null);
+                moveForward(d);
             }
 
-            //Go to crater
-            slideRight(5);
-          setPower(0);
+
+
+            //slideRight(5);
+            setPower(0);
+            detector.disable();
             stop();
             requestOpModeStop();
             break;
@@ -123,26 +110,131 @@ public class AutoOpMode extends LinearOpMode {
         MotorLand.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         MotorLand.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
+        telemetry.addData("Status", "DogeCV 2018.0 - Sampling Order Example");
+        telemetry.update();
+
         detector = new SamplingOrderDetector();
         detector.init(hardwareMap.appContext, CameraViewDisplay.getInstance());
         detector.useDefaults();
 
-        detector.downscale = 0.4; // How much to downscale the input frames
+        detector.downscale = 1; // How much to downscale the input frames
 
         // Optional Tuning
-        detector.areaScoringMethod = DogeCV.AreaScoringMethod.MAX_AREA; // Can also be PERFECT_AREA
+        detector.areaScoringMethod = DogeCV.AreaScoringMethod.PERFECT_AREA; // Can also be PERFECT_AREA
+        detector.perfectAreaScorer.perfectArea = 10000;
         //detector.perfectAreaScorer.perfectArea = 10000; // if using PERFECT_AREA scoring
-        detector.maxAreaScorer.weight = 0.001;
+        detector.maxAreaScorer.weight = .001;
 
-        detector.ratioScorer.weight = 15;
+        detector.setSpeed(DogeCV.DetectionSpeed.BALANCED);
+
+        detector.ratioScorer.weight = 5;
         detector.ratioScorer.perfectRatio = 1.0;
 
-
         detector.enable();
-        getGoldPosition();
-        detector.disable();
+        telemetry.addData("Initialise successful ", null);
+        telemetry.update();
+     //   detector.enable();
+        sleep(1000);
+        }
 
+    public void robotLanding (){
+
+        //Landing
+        MotorLand.setPower(1);
+
+        double dist = 20.5;
+        int COUNTS = distanceToCounts (dist);
+
+        telemetry.addData("Counts", COUNTS);
+        telemetry.update();
+        MotorLand.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        MotorLand.setTargetPosition((MotorLand.getCurrentPosition() + (COUNTS)));
+
+        telemetry.addData("Robot Landing", (MotorLand.getCurrentPosition() + (COUNTS)));
+        telemetry.update();
+
+
+        while (opModeIsActive() && MotorLand.isBusy())
+        {
+            telemetry.addData("Robot Landing", "Encoders");
+            telemetry.update();
+        }
+
+        telemetry.addData(" After Robot Landing ", (MotorLand.getCurrentPosition() + (COUNTS)));
+        telemetry.update();
+
+        //setPower(0);
+
+        //Release handle
+
+        //MotorLand.setTargetPosition((MotorLand.getCurrentPosition() - (COUNTS)));
+
+        /*while (opModeIsActive() && MotorLand.isBusy())
+        {
+            telemetry.addData("Taking Landing arm down", "Encoders");
+            telemetry.update();
+        }*/
+
+        //Come back to center position
+
+        /*setPower(0);*/
     }
+
+    public char getGoldPosition() {
+        char goldPosition;
+        int center = 0;
+        int left = 0;
+        int right = 0;
+        int uk = 0;
+
+        try {
+            for (int i = 0; i < 100; i++)
+            {
+                if ((detector.getCurrentOrder().toString()).equalsIgnoreCase("LEFT")) {
+                    left++;
+                } else if ((detector.getCurrentOrder().toString()).equalsIgnoreCase("RIGHT")) {
+                    right++;
+                } else if (detector.getCurrentOrder().toString().equalsIgnoreCase("CENTER")) {
+                    center++;
+                } else                                                                          //ranai changed this 10/26
+                    uk++;
+            }
+            telemetry.addData("Order in gold posn method", detector.getCurrentOrder().toString());
+            telemetry.update();
+            sleep(1000);
+        }
+        catch (Exception e) {
+            telemetry.addData("Exception: ", e);
+        }
+
+        if(center>left && center>right)
+            goldPosition = 'c';
+        else if(left>center && left>right)
+            goldPosition = 'l';
+        else if(right>center && right>left)
+            goldPosition = 'r';
+        else
+        {
+            goldPosition = 'n';
+            MotorBackX.setPower(0);
+            MotorFrontX.setPower(0);
+            MotorBackY.setPower(0);
+            MotorFrontY.setPower(0);
+        }
+
+        telemetry.addData("Gold Position: ", goldPosition);
+        telemetry.addData("Center: ", center);
+        telemetry.addData("left: ", left);
+        telemetry.addData("Right: ", right);
+        telemetry.addData("Unknown /n", uk);
+        telemetry.addData("Exiting getGold Posn method",null);
+        telemetry.update();
+        sleep(10000);
+
+        return goldPosition;
+    }
+
 
     public void moveForward(double distance)
     {
@@ -435,54 +527,6 @@ public class AutoOpMode extends LinearOpMode {
         sleep(100);
     }
 
-    public void robotLanding (){
-
-        //Landing
-        MotorLand.setPower(1);
-
-        double dist = 21;
-        int COUNTS = distanceToCounts (dist);
-
-        telemetry.addData("Counts", COUNTS);
-        telemetry.update();
-        MotorLand.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-        MotorLand.setTargetPosition((MotorLand.getCurrentPosition() + (COUNTS)));
-
-        telemetry.addData("Robot Landing", (MotorLand.getCurrentPosition() + (COUNTS)));
-        telemetry.update();
-
-
-        while (opModeIsActive() && MotorLand.isBusy())
-        {
-            telemetry.addData("Robot Landing", "Encoders");
-            telemetry.update();
-        }
-
-        telemetry.addData(" After Robot Landing ", (MotorLand.getCurrentPosition() + (COUNTS)));
-        telemetry.update();
-
-        setPower(0);
-
-        //Release handle
-        slideLeft(0.5);
-
-        //Get landing arm down
-        MotorLand.setPower(-1.0);
-
-        MotorLand.setTargetPosition((MotorLand.getCurrentPosition() - (COUNTS)));
-
-        while (opModeIsActive() && MotorLand.isBusy())
-        {
-            telemetry.addData("Taking Landing arm down", "Encoders");
-            telemetry.update();
-        }
-        setPower(0);
-
-        //Come back to center position
-        slideRight(0.3);
-    }
-
 
     public void setPower(double power)
     {
@@ -499,45 +543,8 @@ public class AutoOpMode extends LinearOpMode {
     }
 
 
-    public void getGoldPosition() {
-        goldPosition = 'n';
-        int center = 0;
-        int left = 0;
-        int right = 0;
 
-        try {
-            for (int i = 0; i < 100; i++) {
-                if (detector.getCurrentOrder().toString() == "LEFT") {
-                    left++;
-                } else if (detector.getCurrentOrder().toString() == "RIGHT") {
-                    right++;
-                } else if (detector.getCurrentOrder().toString() == "CENTER") {
-                    center++;
-                }
-                telemetry.addData("Order", detector.getCurrentOrder().toString());
-                telemetry.update();
-                sleep (100);
-            }
 
-        }catch (Exception e) {
-            telemetry.addData("Exception: ", e);
-        }
-
-        if(center>left && center>right){
-            goldPosition = 'c';
-        } else if(left>center && left>right){
-            goldPosition = 'l';
-        } else if(right>center && right>left){
-            goldPosition = 'r';
-        }
-
-        telemetry.addData("Gold Position: ", goldPosition);
-        telemetry.addData("Last Order", detector.getLastOrder().toString()); // The last known result
-        telemetry.addData("Center: ", center);
-        telemetry.addData("left: ", left);
-        telemetry.addData("Right: ", right);
-        telemetry.update();
-    }
     public void placeMarker(){
         extendArmForward(6);
         moveArmForward(.8);
