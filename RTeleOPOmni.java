@@ -74,7 +74,7 @@ public class RTeleOPOmni extends OpMode
         MotorBackY.setDirection(DcMotorSimple.Direction.FORWARD);
 
         MotorExtend.setDirection(DcMotorSimple.Direction.FORWARD);
-        MotorArm.setDirection(DcMotorSimple.Direction.REVERSE);
+        MotorArm.setDirection(DcMotorSimple.Direction.FORWARD);
         MotorLand.setDirection(DcMotorSimple.Direction.FORWARD);
 
 
@@ -159,34 +159,36 @@ public class RTeleOPOmni extends OpMode
         armExtension_posError = des_arm_extension - MotorExtend.getCurrentPosition();
         armExtension_posError = (float) (min(max(.003 * armExtension_posError, -1.0), 1.0));
         telemetry.addData("Power for extension is set to : ",armExtension_posError);            //how much we accumulate. Sensitivity
-        MotorExtend.setPower(armExtension_posError);
+        MotorExtend.setPower(-armExtension_posError);
         //Arm extension and retraction over
 
 
         //raising and lowering the landing arm
         if (gamepad2.dpad_down)
         {
-            des_landingArm_position += 16 * 0.5;                                                             //how fast we accumulate. Speed
-            des_landingArm_position = (min(max(des_landingArm_position, -10), 5000));
-            telemetry.addData("des_landingArm", des_landingArm_position);
+            telemetry.addData("Land Position: ", MotorLand.getCurrentPosition());
             telemetry.update();
-            landingArm_PosError = (des_landingArm_position - MotorLand.getCurrentPosition());
-            landingArm_PosError = (float) (min(max(10 * landingArm_PosError, -1.0), 1.0));                  //how much we accumulate. Sensitivity
-            telemetry.addData("Landing Arm Power :", landingArm_PosError);
-            telemetry.update();
-            MotorLand.setPower(-landingArm_PosError);//before was landingArm_PosError
-            MotorLand.setPower(0);
+            if(MotorLand.getCurrentPosition()> 0)
+            MotorLand.setPower(-1.0);
+            else
+                MotorLand.setPower(0);
         }
 
         if (gamepad2.dpad_up)
         {
-            des_landingArm_position += 16* 0.5;
-            des_landingArm_position = (min(max(des_landingArm_position, -10), 5000));                       //how fast we accumulate. Speed
-            landingArm_PosError = (des_landingArm_position - MotorLand.getCurrentPosition());
-            landingArm_PosError = (float) (min(max(10 * landingArm_PosError, -1.0), 1.0));                 //how much we accumulate. Sensitivity
-            telemetry.addData("Landing Arm Power :", landingArm_PosError);
+
+            telemetry.addData("Land Position: ", MotorLand.getCurrentPosition());
             telemetry.update();
-            MotorLand.setPower(landingArm_PosError);//before was -landingArm_PosError
+            if(MotorLand.getCurrentPosition() <= 10000)
+                MotorLand.setPower(1.0);
+            else
+                MotorLand.setPower(0);
+        }
+
+        if(!gamepad2.dpad_up && !gamepad2.dpad_down)
+        {
+            telemetry.addData("Land Position: ", MotorLand.getCurrentPosition());
+            telemetry.update();
             MotorLand.setPower(0);
         }
         //end of raising and landing arm code
