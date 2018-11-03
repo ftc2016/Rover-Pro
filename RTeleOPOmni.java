@@ -28,6 +28,10 @@ public class RTeleOPOmni extends OpMode
     float armExtension_posError;
     float landingArm_PosError;
     float des_landingArm_position;
+    float extend;
+
+    int extendMaxPosition;
+    int extendMinPosition;
 
     DcMotor MotorFrontY;
     DcMotor MotorFrontX;
@@ -77,15 +81,20 @@ public class RTeleOPOmni extends OpMode
         MotorArm.setDirection(DcMotorSimple.Direction.FORWARD);
         MotorLand.setDirection(DcMotorSimple.Direction.FORWARD);
 
-
-        MotorExtend.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        MotorExtend.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
         MotorArm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         MotorArm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         MotorLand.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         MotorLand.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        MotorExtend.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        MotorExtend.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        extendMinPosition = MotorExtend.getCurrentPosition() + 500;
+        extendMaxPosition = MotorExtend.getCurrentPosition() + 7500;
+
+        telemetry.addData("Arm Extend: ", MotorExtend.getCurrentPosition());
+        telemetry.update();
 
 
     }
@@ -101,6 +110,7 @@ public class RTeleOPOmni extends OpMode
         float powerXWheels = 0;
         float powerYWheels = 0;
 
+        extend = gamepad2.right_stick_y;
 
         // Handle regular movement
         powerYWheels += gamepad1.left_stick_y;
@@ -121,12 +131,12 @@ public class RTeleOPOmni extends OpMode
         telemetry.addData("Power Y wheels", maxY);
         telemetry.update();
 
-        MotorBackX.setPower(maxX);
-        MotorFrontX.setPower(maxX);
+        MotorBackX.setPower(maxX*.9);
+        MotorFrontX.setPower(maxX*.9);
 
 
-        MotorBackY.setPower(maxY);
-        MotorFrontY.setPower(maxY);
+        MotorBackY.setPower(maxY*.9);
+        MotorFrontY.setPower(maxY*.9);
 
 
         if (gamepad1.right_bumper)
@@ -144,34 +154,62 @@ public class RTeleOPOmni extends OpMode
             MotorBackY.setPower(0.5);
         }
 
+        if(extend > 0)
+        {
+            armRetract(10);
+        }
 
-        //Moving the arm forwards and backwards
-        des_arm_rotation += 12 * gamepad2.left_stick_y;                                                  //how fast we accumulate. Speed
+        if(extend < 0)
+        {
+            armExtend(10);
+        }
+
+        des_arm_rotation += 5 * gamepad2.left_stick_y;                                                  //how fast we accumulate. Speed
         des_arm_rotation = (float) (min(max(des_arm_rotation, -120.0), 1150.0));
         armRotation_posError = des_arm_rotation - MotorArm.getCurrentPosition();
-        armRotation_posError = (float) (min(max(.0025 * armRotation_posError, -1.0), 1.0));             //how much we accumulate. Sensitivity
+        armRotation_posError = (float) (min(max(.0025 * armRotation_posError, -1.0), 1.0));
+        telemetry.addData("Power for extension is set to : ", armRotation_posError);
+        telemetry.addData("Extension Position: ", MotorArm.getCurrentPosition());
+        telemetry.update();//how much we accumulate. Sensitivity                                                                                        //how much we accumulate. Sensitivity
         MotorArm.setPower(armRotation_posError);
         //Arm Movements over
 
+      /*  if(gamepad2.right_stick_y>0 && MotorExtend.getCurrentPosition() < 7000)
+            MotorExtend.setPower(1.0);
+        else if(gamepad2.right_stick_y==0)
+            MotorExtend.setPower(0);
+        else if(gamepad2.right_stick_y<0 && MotorExtend.getCurrentPosition()>0)
+            MotorExtend.setPower(-1.0);
+
+*/
         //Arm Extension and retraction
-        des_arm_extension += 15 * gamepad2.right_stick_y;                                                //how fast we accumulate. Speed
-        des_arm_extension = (float) (min(max(des_arm_extension, 0), 7000));
-        armExtension_posError = des_arm_extension - MotorExtend.getCurrentPosition();
-        armExtension_posError = (float) (min(max(.003 * armExtension_posError, -1.0), 1.0));
-        telemetry.addData("Power for extension is set to : ",armExtension_posError);            //how much we accumulate. Sensitivity
-        MotorExtend.setPower(-armExtension_posError);
+//            des_arm_extension += 5 * gamepad2.right_stick_y;       //15                                         //how fast we accumulate. Speed
+//            des_arm_extension = (float) (min(max(des_arm_extension, 0.0), 7000.0));
+//            armExtension_posError = des_arm_extension - MotorExtend.getCurrentPosition();
+//            armExtension_posError = (float) (min(max(.0005 * armExtension_posError, -1.0), 1.0));   //.003
+//            telemetry.addData("Power for extension is set to : ", armExtension_posError);
+//            telemetry.addData("Extension Position: ", MotorExtend.getCurrentPosition());
+//            telemetry.update();//how much we accumulate. Sensitivity
+//            MotorExtend.setPower(armExtension_posError);
+//            MotorExtend.setPower(0);
+
         //Arm extension and retraction over
 
 
         //raising and lowering the landing arm
         if (gamepad2.dpad_down)
         {
-            telemetry.addData("Land Position: ", MotorLand.getCurrentPosition());
+            MotorLand.setPower(-0.8);
+            /*telemetry.addData("Land Position: ", MotorLand.getCurrentPosition());
             telemetry.update();
             if(MotorLand.getCurrentPosition()> 0)
             MotorLand.setPower(-1.0);
             else
                 MotorLand.setPower(0);
+
+                Changed by Vishnu on 10/30/18
+
+                */
         }
 
         if (gamepad2.dpad_up)
@@ -179,7 +217,7 @@ public class RTeleOPOmni extends OpMode
 
             telemetry.addData("Land Position: ", MotorLand.getCurrentPosition());
             telemetry.update();
-            if(MotorLand.getCurrentPosition() <= 10000)
+            if(MotorLand.getCurrentPosition() <= 15000)
                 MotorLand.setPower(1.0);
             else
                 MotorLand.setPower(0);
@@ -201,6 +239,88 @@ public class RTeleOPOmni extends OpMode
     {
         int rotations = (int) Math.round(rotations1 * 100);
         return Math.round(rotations);
+    }
+
+    public void armExtend(double distance)
+
+    {
+
+        MotorExtend.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+
+
+        int COUNTS = distanceToCounts(distance);
+
+
+
+        MotorExtend.setTargetPosition((MotorExtend.getCurrentPosition() + (COUNTS)));
+
+
+
+        if(MotorExtend.getCurrentPosition() < extendMaxPosition) {
+
+            MotorExtend.setPower(1);
+
+            while (MotorExtend.isBusy()) {
+
+                telemetry.addData("Extending motor arm", MotorExtend.getCurrentPosition());
+
+                telemetry.update();
+
+            }
+
+        }
+
+        MotorExtend.setPower(0);
+
+        telemetry.addData("Extending motor arm", MotorExtend.getCurrentPosition());
+
+        telemetry.addData("Extending motor arm Max: ", extendMaxPosition);
+
+        telemetry.update();
+
+    }
+
+
+
+    public void armRetract(double distance)
+
+    {
+
+        MotorExtend.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+
+
+        int COUNTS = distanceToCounts(distance);
+
+
+
+        MotorExtend.setTargetPosition((MotorExtend.getCurrentPosition() - (COUNTS)));
+
+
+
+        if(MotorExtend.getCurrentPosition() > extendMinPosition) {
+
+            MotorExtend.setPower(-1);
+
+            while (MotorExtend.isBusy()) {
+
+                telemetry.addData("Retracting motor arm", MotorExtend.getCurrentPosition());
+
+                telemetry.update();
+
+            }
+
+        }
+
+        MotorExtend.setPower(0);
+
+        telemetry.addData("Retracting motor arm", MotorExtend.getCurrentPosition());
+
+        telemetry.addData("Retracting motor arm Min: ", extendMinPosition);
+
+        telemetry.update();
+
     }
 
     @Override
