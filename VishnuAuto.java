@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
-@Autonomous(name = "YeEt")
+@Autonomous(name = "Autonomous Scrimmage 3")
 public class VishnuAuto extends LinearOpMode
 {
     DcMotor MotorFrontY;
@@ -36,18 +36,18 @@ public class VishnuAuto extends LinearOpMode
 
         while (opModeIsActive())
         {
+            detector.enable();
+
             robotLanding();
 
             findCube();
 
-            moveBackward(0.4); // To not touch the marker when we deploy it
-
             ServoMarkerArm.setPosition(0);
             ServoMarkerArm.setPosition(1);
 
+            moveBackward(0.6); // To not touch the marker when we deploy it
+
             detector.disable();
-            requestOpModeStop();
-            stop();
             break;
         }
 
@@ -107,7 +107,6 @@ public class VishnuAuto extends LinearOpMode
         detector.ratioScorer.weight = 5;
         detector.ratioScorer.perfectRatio = 1.0;
 
-        detector.enable();
 
     }
 
@@ -224,7 +223,7 @@ public class VishnuAuto extends LinearOpMode
         MotorLand.setPower(1);
         MotorLand.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        double dist = 20.5;
+        double dist = 21.2;
         int COUNTS = distanceToCounts(dist);
 
         MotorLand.setTargetPosition((MotorLand.getCurrentPosition() + (COUNTS)));
@@ -244,6 +243,7 @@ public class VishnuAuto extends LinearOpMode
         slideLeft(0.5, 0.65);
         moveForward(1.3);
         slideLeft(0.75,0.65);
+        anticlockwise(0.1, 0.1);
         sleep(1500);
     }
 
@@ -261,18 +261,19 @@ public class VishnuAuto extends LinearOpMode
         {
             telemetry.addData("Cube Found Left", null);
             telemetry.update();
-            slideLeft(0.5, 0.3);
-            moveForward(3.6);
-            clockwise(.2, .3);
-            moveForward(.7);
+            slideLeft(0.6, 0.3);
+            moveForward(3.75);
+            clockwise(.2, .4);
+            moveForward(.8);
         }
         else
             {
                 slideRight(1.33, .3);
-                sleep(1500);         //checking center
+                sleep(1500);                    //checking center
                 if (detector.isFound())
                 {
-                    moveForward(3.5);           //moving to left one
+                    slideLeft(0.55, 0.5);
+                    moveForward(3.3);               //moving to left one
                     telemetry.addData("Cube found center", null);
                     telemetry.update();
                 }
@@ -281,9 +282,10 @@ public class VishnuAuto extends LinearOpMode
                     telemetry.addData("Cube found right", null);
                     telemetry.update();
                     slideRight(1.33,.3);
-                    moveForward(3.0);
+                    moveForward(2.7);
                     anticlockwise(.3,.7);//moving to right one
-                    moveForward(1);
+                    moveForward(1.4);
+                    //moveBackward(50);
                 }
             }
 

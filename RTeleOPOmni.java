@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
@@ -14,7 +15,7 @@ import static java.lang.Math.min;
 /**
  * TeleOp
  */
-@TeleOp(name = "TeleOp Scrimmage 2")
+@TeleOp(name = "TeleOp Scrimmage 3")
 public class RTeleOPOmni extends OpMode
 {
     //Initialising all necessary variables
@@ -41,6 +42,8 @@ public class RTeleOPOmni extends OpMode
     DcMotor MotorArm;
     DcMotor MotorExtend;
     DcMotor MotorLand;
+
+    Servo markerArm;
 
     @Override
     public void init()
@@ -71,6 +74,9 @@ public class RTeleOPOmni extends OpMode
         MotorExtend = hardwareMap.dcMotor.get("extend");
         MotorArm = hardwareMap.dcMotor.get("arm");
         MotorLand = hardwareMap.dcMotor.get("land");
+
+        markerArm = hardwareMap.servo.get("deploy");
+        markerArm.setDirection(Servo.Direction.FORWARD);
 
         MotorFrontX.setDirection(DcMotorSimple.Direction.REVERSE);
         MotorBackX.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -131,12 +137,11 @@ public class RTeleOPOmni extends OpMode
         telemetry.addData("Power Y wheels", maxY);
         telemetry.update();
 
-        MotorBackX.setPower(maxX*.9);
-        MotorFrontX.setPower(maxX*.9);
+        MotorBackX.setPower((Math.abs(maxX)*maxX));
+        MotorFrontX.setPower((Math.abs(maxX)*maxX));
 
-
-        MotorBackY.setPower(maxY*.9);
-        MotorFrontY.setPower(maxY*.9);
+        MotorBackY.setPower((Math.abs(maxY)*maxY));
+        MotorFrontY.setPower((Math.abs(maxY)*maxY));
 
 
         if (gamepad1.right_bumper)
@@ -195,11 +200,22 @@ public class RTeleOPOmni extends OpMode
 
         //Arm extension and retraction over
 
+      /*  if(gamepad2.a)
+        {
+            MotorFrontY.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            MotorFrontX.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            MotorBackX.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            MotorBackY.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
+            MotorArm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            MotorExtend.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            MotorLand.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        }
+*/
         //raising and lowering the landing arm
         if (gamepad2.dpad_down)
         {
-            MotorLand.setPower(-0.8);
+            MotorLand.setPower(-1.0);
             /*telemetry.addData("Land Position: ", MotorLand.getCurrentPosition());
             telemetry.update();
             if(MotorLand.getCurrentPosition()> 0)
@@ -214,22 +230,19 @@ public class RTeleOPOmni extends OpMode
 
         if (gamepad2.dpad_up)
         {
-
-            telemetry.addData("Land Position: ", MotorLand.getCurrentPosition());
-            telemetry.update();
-            if(MotorLand.getCurrentPosition() <= 15000)
                 MotorLand.setPower(1.0);
-            else
-                MotorLand.setPower(0);
         }
 
         if(!gamepad2.dpad_up && !gamepad2.dpad_down)
         {
-            telemetry.addData("Land Position: ", MotorLand.getCurrentPosition());
-            telemetry.update();
             MotorLand.setPower(0);
         }
         //end of raising and landing arm code
+
+        if(gamepad1.a)
+        {
+            markerArm.setPosition(1);
+        }
 
 
 
