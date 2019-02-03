@@ -7,18 +7,16 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 /**
  * TeleOp
  */
-@TeleOp(name = "TeleOp Scrimmage 3")
+@TeleOp(name = "TeleOp Qualifiers")
 public class RTeleOPOmni extends OpMode
 {
-    //Initialising all necessary variables
+    //Initializing all necessary variables
     float y;
     float x;
     boolean land;
@@ -34,6 +32,7 @@ public class RTeleOPOmni extends OpMode
     int extendMaxPosition;
     int extendMinPosition;
 
+    //Naming all necessary motors, servos and sensors
     DcMotor MotorFrontY;
     DcMotor MotorFrontX;
     DcMotor MotorBackX;
@@ -42,14 +41,16 @@ public class RTeleOPOmni extends OpMode
     DcMotor MotorArm;
     DcMotor MotorExtend;
     DcMotor MotorLand;
+    DcMotor MotorSweep;
 
     Servo markerArm;
 
+    //This is where all the variables used in the main program are initialized
     @Override
     public void init()
     {
 
-        telemetry.addData("Inside Init() method",null);
+        //Assigning gamepad values to hardware parts
         y = gamepad1.left_stick_y;
         x = gamepad1.right_stick_x;
         land = gamepad2.a;
@@ -62,10 +63,7 @@ public class RTeleOPOmni extends OpMode
         des_landingArm_position = 0;
 
 
-        telemetry.addData("Initialised", "nothing");
-        telemetry.update();
-
-        // defining all the hardware
+        // Defining all the hardware parts
         MotorFrontX = hardwareMap.dcMotor.get("fx");
         MotorBackX = hardwareMap.dcMotor.get("bx");
         MotorBackY = hardwareMap.dcMotor.get("by");
@@ -74,48 +72,47 @@ public class RTeleOPOmni extends OpMode
         MotorExtend = hardwareMap.dcMotor.get("extend");
         MotorArm = hardwareMap.dcMotor.get("arm");
         MotorLand = hardwareMap.dcMotor.get("land");
+        MotorSweep = hardwareMap.dcMotor.get("sweep");
 
         markerArm = hardwareMap.servo.get("deploy");
         markerArm.setDirection(Servo.Direction.FORWARD);
 
-        MotorFrontX.setDirection(DcMotorSimple.Direction.REVERSE);
+        //Setting the direction of each motor
+        MotorFrontX.setDirection(DcMotorSimple.Direction.REVERSE);                                  //alternating between forward and reverse depending on motor placement
         MotorBackX.setDirection(DcMotorSimple.Direction.FORWARD);
         MotorFrontY.setDirection(DcMotorSimple.Direction.REVERSE);
         MotorBackY.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        MotorExtend.setDirection(DcMotorSimple.Direction.FORWARD);
+        MotorExtend.setDirection(DcMotorSimple.Direction.REVERSE);
         MotorArm.setDirection(DcMotorSimple.Direction.FORWARD);
         MotorLand.setDirection(DcMotorSimple.Direction.FORWARD);
+        MotorSweep.setDirection(DcMotorSimple.Direction.REVERSE);
 
+        MotorSweep.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        //Configuring encoders to motors
         MotorArm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         MotorArm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         MotorLand.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         MotorLand.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        MotorExtend.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        MotorExtend.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        MotorExtend.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        extendMinPosition = MotorExtend.getCurrentPosition() + 500;
-        extendMaxPosition = MotorExtend.getCurrentPosition() + 7500;
-
-        telemetry.addData("Arm Extend: ", MotorExtend.getCurrentPosition());
-        telemetry.update();
-
+        extendMinPosition = 600;
+        extendMaxPosition = 7600;
 
     }
 
-
+    //what is tis
     @Override
     public void loop()
     {
-        telemetry.addData("Inside loop",null);
-        telemetry.update();
-
-        // Reset variables
+        // initializing wheel variables
         float powerXWheels = 0;
         float powerYWheels = 0;
 
+        //assigning controller values to variable to pass to the motor
         extend = gamepad2.right_stick_y;
 
         // Handle regular movement
@@ -125,17 +122,10 @@ public class RTeleOPOmni extends OpMode
         powerXWheels += gamepad1.right_stick_x;
 
 
-        telemetry.addData("Power X wheels",powerXWheels);
-        telemetry.addData("Power Y wheels",powerXWheels);
-        telemetry.update();
-
-
         // Handle turning movement
         double maxX = (double) powerXWheels;
         double maxY = (double) powerYWheels;
-        telemetry.addData("Power X wheels", maxX);
-        telemetry.addData("Power Y wheels", maxY);
-        telemetry.update();
+
 
         MotorBackX.setPower((Math.abs(maxX)*maxX));
         MotorFrontX.setPower((Math.abs(maxX)*maxX));
@@ -143,7 +133,7 @@ public class RTeleOPOmni extends OpMode
         MotorBackY.setPower((Math.abs(maxY)*maxY));
         MotorFrontY.setPower((Math.abs(maxY)*maxY));
 
-
+        //Turning clockwise
         if (gamepad1.right_bumper)
         {
             MotorFrontX.setPower(0.5);
@@ -151,6 +141,8 @@ public class RTeleOPOmni extends OpMode
             MotorBackX.setPower(-0.5);
             MotorBackY.setPower(-0.5);
         }
+
+        //Turning anticlockwise
         if (gamepad1.left_bumper)
         {
             MotorFrontX.setPower(-0.5);
@@ -159,73 +151,34 @@ public class RTeleOPOmni extends OpMode
             MotorBackY.setPower(0.5);
         }
 
-        if(extend > 0)
-        {
-            armRetract(10);
-        }
+        telemetry.addData("Land value", MotorLand.getCurrentPosition());
+        telemetry.update();
 
-        if(extend < 0)
-        {
-            armExtend(10);
-        }
+        //arm extension starts
+        // A position based loop. Helps us to counteract the effect of gravity on arm extension
+        des_arm_extension -= 40 * gamepad2.right_stick_y;    //20
+        des_arm_extension = (max(min(des_arm_extension, extendMaxPosition),extendMinPosition-100));
+        if(gamepad2.a)
+            des_arm_extension = 6700;
+        armExtension_posError = des_arm_extension - -1*MotorExtend.getCurrentPosition();
+        armExtension_posError = (float)(min(max(.00125 * armExtension_posError, -1.0), 1.0));
+        MotorExtend.setPower(-armExtension_posError);
+        //arm extension control over
 
-        des_arm_rotation += 5 * gamepad2.left_stick_y;                                                  //how fast we accumulate. Speed
-        des_arm_rotation = (float) (min(max(des_arm_rotation, -120.0), 1150.0));
+        //arm rotation starts
+        //A position based loop. Helps us to counteract the effect the effect of gravity on arm rotation
+        des_arm_rotation += 25 * gamepad2.left_stick_y;     //20                                        //Accumulator. How much we scale the commands from the controller. Speed
+        des_arm_rotation = (float) (min(max(des_arm_rotation, -350.0), 2800.0)); //1150
         armRotation_posError = des_arm_rotation - MotorArm.getCurrentPosition();
-        armRotation_posError = (float) (min(max(.0025 * armRotation_posError, -1.0), 1.0));
-        telemetry.addData("Power for extension is set to : ", armRotation_posError);
-        telemetry.addData("Extension Position: ", MotorArm.getCurrentPosition());
-        telemetry.update();//how much we accumulate. Sensitivity                                                                                        //how much we accumulate. Sensitivity
+        armRotation_posError = (float) (min(max(.0025 * armRotation_posError, -1.0), 1.0));         //Sensitivity. How much torque per encoder count
         MotorArm.setPower(armRotation_posError);
-        //Arm Movements over
+        //Arm rotation over
 
-      /*  if(gamepad2.right_stick_y>0 && MotorExtend.getCurrentPosition() < 7000)
-            MotorExtend.setPower(1.0);
-        else if(gamepad2.right_stick_y==0)
-            MotorExtend.setPower(0);
-        else if(gamepad2.right_stick_y<0 && MotorExtend.getCurrentPosition()>0)
-            MotorExtend.setPower(-1.0);
 
-*/
-        //Arm Extension and retraction
-//            des_arm_extension += 5 * gamepad2.right_stick_y;       //15                                         //how fast we accumulate. Speed
-//            des_arm_extension = (float) (min(max(des_arm_extension, 0.0), 7000.0));
-//            armExtension_posError = des_arm_extension - MotorExtend.getCurrentPosition();
-//            armExtension_posError = (float) (min(max(.0005 * armExtension_posError, -1.0), 1.0));   //.003
-//            telemetry.addData("Power for extension is set to : ", armExtension_posError);
-//            telemetry.addData("Extension Position: ", MotorExtend.getCurrentPosition());
-//            telemetry.update();//how much we accumulate. Sensitivity
-//            MotorExtend.setPower(armExtension_posError);
-//            MotorExtend.setPower(0);
-
-        //Arm extension and retraction over
-
-      /*  if(gamepad2.a)
-        {
-            MotorFrontY.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            MotorFrontX.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            MotorBackX.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            MotorBackY.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-            MotorArm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            MotorExtend.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            MotorLand.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        }
-*/
         //raising and lowering the landing arm
         if (gamepad2.dpad_down)
         {
             MotorLand.setPower(-1.0);
-            /*telemetry.addData("Land Position: ", MotorLand.getCurrentPosition());
-            telemetry.update();
-            if(MotorLand.getCurrentPosition()> 0)
-            MotorLand.setPower(-1.0);
-            else
-                MotorLand.setPower(0);
-
-                Changed by Vishnu on 10/30/18
-
-                */
         }
 
         if (gamepad2.dpad_up)
@@ -239,101 +192,23 @@ public class RTeleOPOmni extends OpMode
         }
         //end of raising and landing arm code
 
-        if(gamepad1.a)
+        //setting markerArm to -1 all the time
+        markerArm.setPosition(-1);
+
+
+        //Controls for the sweeper
+        if(gamepad2.right_bumper)
         {
-            markerArm.setPosition(1);
+            MotorSweep.setPower(0.55);
         }
-
-
-
-    }
-
-    public int distanceToCounts(double rotations1)
-    {
-        int rotations = (int) Math.round(rotations1 * 100);
-        return Math.round(rotations);
-    }
-
-    public void armExtend(double distance)
-
-    {
-
-        MotorExtend.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-
-
-        int COUNTS = distanceToCounts(distance);
-
-
-
-        MotorExtend.setTargetPosition((MotorExtend.getCurrentPosition() + (COUNTS)));
-
-
-
-        if(MotorExtend.getCurrentPosition() < extendMaxPosition) {
-
-            MotorExtend.setPower(1);
-
-            while (MotorExtend.isBusy()) {
-
-                telemetry.addData("Extending motor arm", MotorExtend.getCurrentPosition());
-
-                telemetry.update();
-
+        else if(gamepad2.left_bumper)
+        {
+            MotorSweep.setPower(-0.55);
+        }
+        else if(!gamepad2.right_bumper)
+            {
+                MotorSweep.setPower(0);
             }
-
-        }
-
-        MotorExtend.setPower(0);
-
-        telemetry.addData("Extending motor arm", MotorExtend.getCurrentPosition());
-
-        telemetry.addData("Extending motor arm Max: ", extendMaxPosition);
-
-        telemetry.update();
-
-    }
-
-
-
-    public void armRetract(double distance)
-
-    {
-
-        MotorExtend.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-
-
-        int COUNTS = distanceToCounts(distance);
-
-
-
-        MotorExtend.setTargetPosition((MotorExtend.getCurrentPosition() - (COUNTS)));
-
-
-
-        if(MotorExtend.getCurrentPosition() > extendMinPosition) {
-
-            MotorExtend.setPower(-1);
-
-            while (MotorExtend.isBusy()) {
-
-                telemetry.addData("Retracting motor arm", MotorExtend.getCurrentPosition());
-
-                telemetry.update();
-
-            }
-
-        }
-
-        MotorExtend.setPower(0);
-
-        telemetry.addData("Retracting motor arm", MotorExtend.getCurrentPosition());
-
-        telemetry.addData("Retracting motor arm Min: ", extendMinPosition);
-
-        telemetry.update();
-
     }
 
     @Override
@@ -341,164 +216,3 @@ public class RTeleOPOmni extends OpMode
     {
     }
 }
-
-
-/*//Check difference, here starting position is at middle and will move both the sides
-        turnMinPosition = MotorArm.getCurrentPosition() - 120;
-        turnMaxPosition = MotorArm.getCurrentPosition() + 450;
-
-        //This Motor is running in reverse direction hence values subtracted
-        extendMinPosition = MotorExtend.getCurrentPosition() + 500;
-        //Difference is 9000
-        extendMaxPosition = MotorExtend.getCurrentPosition() + 7500;
-
-
-        landMinPosition = MotorLand.getCurrentPosition() - 200;
-        //Difference is 25000
-        landMaxPosition = MotorLand.getCurrentPosition() - 22000;
-
-        telemetry.addData("Arm Extend: ", MotorExtend.getCurrentPosition());
-        telemetry.addData("Arm Land: ", MotorLand.getCurrentPosition());
-        telemetry.addData("Arm Land: ", landMaxPosition);
-        telemetry.addData("Arm Turn: ", MotorArm.getCurrentPosition());
-
-        telemetry.update();*/
-/*
-    public int distanceToCounts(double rotations1) {
-        int rotations = (int) Math.round(rotations1 * 100);
-        return Math.round(rotations);
-    }
-    public void turnArmForward(double distance)
-    {
-
-        MotorArm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-        int COUNTS = distanceToCounts(distance);
-
-        MotorArm.setTargetPosition((MotorArm.getCurrentPosition() + COUNTS));
-
-        if (turnMaxPosition > MotorArm.getCurrentPosition()){
-            MotorArm.setPower(0.6);
-            while (MotorArm.isBusy()) {
-                telemetry.addData("Turning motor arm forward", MotorArm.getCurrentPosition());
-                telemetry.update();
-            }
-        }
-        MotorArm.setPower(0);
-        telemetry.addData("Turning motor arm Forward: ", MotorArm.getCurrentPosition());
-        telemetry.addData("Turning motor arm Forward Max: ", turnMaxPosition);
-        telemetry.update();
-    }
-
-    public void turnArmBackward(double distance)
-    {
-        MotorArm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        int COUNTS = distanceToCounts(distance);
-        MotorArm.setTargetPosition((MotorArm.getCurrentPosition() - COUNTS));
-
-        if(MotorArm.getCurrentPosition()> turnMinPosition) {
-            MotorArm.setPower(-0.6);
-            while (MotorArm.isBusy()) {
-                telemetry.addData("Turning motor arm backward", MotorArm.getCurrentPosition());
-                telemetry.update();
-            }
-        }
-        MotorArm.setPower(0);
-        telemetry.addData("Turning motor arm backward", MotorArm.getCurrentPosition());
-        telemetry.addData("Turning motor arm backward Min: ", turnMinPosition);
-        telemetry.update();
-    }
-
-    public void armExtend(double distance)
-    {
-        MotorExtend.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-        int COUNTS = distanceToCounts(distance);
-
-        MotorExtend.setTargetPosition((MotorExtend.getCurrentPosition() + (COUNTS)));
-
-        if(MotorExtend.getCurrentPosition() < extendMaxPosition) {
-            MotorExtend.setPower(1);
-            while (MotorExtend.isBusy()) {
-                telemetry.addData("Extending motor arm", MotorExtend.getCurrentPosition());
-                telemetry.update();
-            }
-        }
-        MotorExtend.setPower(0);
-        telemetry.addData("Extending motor arm", MotorExtend.getCurrentPosition());
-        telemetry.addData("Extending motor arm Max: ", extendMaxPosition);
-        telemetry.update();
-    }
-
-    public void armRetract(double distance)
-    {
-        MotorExtend.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-        int COUNTS = distanceToCounts(distance);
-
-        MotorExtend.setTargetPosition((MotorExtend.getCurrentPosition() - (COUNTS)));
-
-        if(MotorExtend.getCurrentPosition() > extendMinPosition) {
-            MotorExtend.setPower(-1);
-            while (MotorExtend.isBusy()) {
-                telemetry.addData("Retracting motor arm", MotorExtend.getCurrentPosition());
-                telemetry.update();
-            }
-        }
-        MotorExtend.setPower(0);
-        telemetry.addData("Retracting motor arm", MotorExtend.getCurrentPosition());
-        telemetry.addData("Retracting motor arm Min: ", extendMinPosition);
-        telemetry.update();
-    }
-
-    public void raise(double distance)
-    {
-        MotorLand.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-        int COUNTS = distanceToCounts(distance);
-
-        MotorLand.setTargetPosition((MotorLand.getCurrentPosition() + (COUNTS)));
-
-        int currentPosition = MotorLand.getCurrentPosition();
-
-        if((MotorLand.getCurrentPosition() < landMinPosition)) {
-            MotorLand.setPower(1);
-            while (MotorLand.isBusy()) {
-                telemetry.addData("Raising the robot", MotorLand.getCurrentPosition());
-                telemetry.update();
-            }
-        }
-        MotorLand.setPower(0);
-        telemetry.addData("Lowering the robot", MotorLand.getCurrentPosition());
-        telemetry.addData("Lowering the robot min: ", landMinPosition);
-        telemetry.update();
-
-    }
-
-    public void land (double distance)
-    {
-        MotorLand.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-        int COUNTS = distanceToCounts(distance);
-
-        MotorLand.setTargetPosition((MotorLand.getCurrentPosition() - (COUNTS)));
-
-        if((MotorLand.getCurrentPosition() > landMaxPosition)) {
-            MotorLand.setPower(-1);
-            while (MotorLand.isBusy()) {
-                telemetry.addData("Lowering the robot", MotorLand.getCurrentPosition());
-                telemetry.update();
-            }
-        }
-        MotorLand.setPower(0);
-        telemetry.addData("Lowering the robot", MotorLand.getCurrentPosition());
-        telemetry.addData("Lowering the robot Max: ", landMaxPosition);
-        telemetry.update();
-    }
-
-    public static void main()
-    {
-        Log.i("Trial","This is a trial message" );
-    }
-    */
-
